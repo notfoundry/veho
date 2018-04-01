@@ -17,7 +17,7 @@
 #include <veho/bus_builder.hpp>
 #include <veho/frame_matchers.hpp>
 
-#include "sam3x.hpp>
+#include "sam3x.hpp"
 #include "fancy_code.hpp"
 
 int main() {
