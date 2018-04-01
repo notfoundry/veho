@@ -152,12 +152,13 @@ namespace veho {
                                     : lower_range_callback(std::forward<LowerRangeCallback>(lower_range_callback)),
                                       upper_range_callback(std::forward<UpperRangeCallback>(upper_range_callback)) {}
 
-                            void operator()(const veho::frame<Controller>& frame) {
+                            template <typename Dependencies>
+                            inline void operator()(Dependencies&& deps, const veho::frame<Controller>& frame) {
                                 const veho::common_frame::id_type frame_id = frame.id;
                                 if (frame_id <= LowerRange::max) {
-                                    lower_range_callback(frame);
+                                    lower_range_callback(std::forward<Dependencies>(deps), frame);
                                 } else if (frame_id >= UpperRange::min) {
-                                    upper_range_callback(frame);
+                                    upper_range_callback(std::forward<Dependencies>(deps), frame);
                                 }
                             }
 

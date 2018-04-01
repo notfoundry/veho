@@ -13,12 +13,10 @@ namespace veho {
     namespace facet {
         namespace receiver {
             namespace optimization {
-                struct normalization_pass_tag {
-                };
-                struct reduction_pass_tag {
-                };
-                struct expansion_pass_tag {
-                };
+                struct preprocessing_pass_tag {};
+                struct normalization_pass_tag {};
+                struct reduction_pass_tag {};
+                struct expansion_pass_tag {};
 
                 namespace detail {
                     template <typename Pass>

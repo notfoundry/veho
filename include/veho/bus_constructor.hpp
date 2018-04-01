@@ -18,7 +18,8 @@ namespace veho {
 
         using bus_type = void;
 
-        static bus_type construct(Config&&) {}
+        template <typename... Args>
+        static bus_type construct(Config&&, Args&&...) {}
     };
 }
 

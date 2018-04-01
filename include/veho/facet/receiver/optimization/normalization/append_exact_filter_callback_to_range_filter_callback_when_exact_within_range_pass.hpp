@@ -31,10 +31,11 @@ namespace veho {
                                     : range_callback(std::forward<RangeCallback>(range_callback)),
                                       exact_callback(std::forward<ExactCallback>(exact_callback)) {}
 
-                            void operator()(const veho::frame<Controller>& frame) {
-                                range_callback(frame);
+                            template <typename Dependencies>
+                            inline void operator()(Dependencies&& deps, const veho::frame<Controller>& frame) {
+                                range_callback(std::forward<Dependencies>(deps), frame);
                                 if (frame.id == Exact::id) {
-                                    exact_callback(frame);
+                                    exact_callback(std::forward<Dependencies>(deps), frame);
                                 }
                             }
 
@@ -49,6 +50,7 @@ namespace veho {
                             using matcher_list = boost::mp11::mp_map_keys<TypeMap>;
 
                             using exact_matchers = boost::mp11::mp_copy_if<matcher_list, veho::detail::is_exact>;
+
                         public:
                             constexpr explicit append_exact_filter_callback_to_range_filter_callback_when_exact_within_range_pass_impl(
                                     Callbacks&& callbacks)

@@ -90,15 +90,17 @@ namespace veho {
                             constexpr min_max_only_callback_unifier(MinCallback&& min_callback,
                                                                     MaxCallback&& max_callback)
                                     : min_callback(std::forward<MinCallback>(min_callback)),
-                                      max_callback(std::forward<MaxCallback>(max_callback)) {}
+                                      max_callback(std::forward<MaxCallback>(max_callback)) {
+                            }
 
-                            void operator()(const veho::frame<Controller>& frame) {
+                            template <typename Dependencies>
+                            inline void operator()(Dependencies&& deps, const veho::frame<Controller>& frame) {
                                 switch (frame.id) {
                                     case Range::min:
-                                        min_callback(frame);
+                                        min_callback(std::forward<Dependencies>(deps), frame);
                                         break;
                                     case Range::max:
-                                        max_callback(frame);
+                                        max_callback(std::forward<Dependencies>(deps), frame);
                                         break;
                                     default:
                                         break;

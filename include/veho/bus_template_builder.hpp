@@ -1,5 +1,5 @@
-#ifndef VEHO_BUS_BUILDER_HPP
-#define VEHO_BUS_BUILDER_HPP
+#ifndef VEHO_BUS_TEMPLATE_BUILDER_HPP
+#define VEHO_BUS_TEMPLATE_BUILDER_HPP
 
 #include <tuple>
 #include <type_traits>
@@ -14,8 +14,8 @@
 #include "facet/receiver/receiver_facet.hpp"
 #include "facet/transmitter/transmitter_facet.hpp"
 
-#include "bus_builder_fwd.hpp"
-#include "bus_constructor.hpp"
+#include "bus_template_builder_fwd.hpp"
+#include "bus_template.hpp"
 
 namespace veho {
     template <
@@ -34,23 +34,25 @@ namespace veho {
         };
 
         template <typename Config>
-        struct bus_builder_impl : builder_facet_enabler<Config> {
+        struct bus_template_builder_impl : builder_facet_enabler<Config> {
         };
     }
 
     template <typename Config>
-    class bus_builder : public detail::bus_builder_impl<Config>, public builder_extensions<Config> {
+    class bus_template_builder : public detail::bus_template_builder_impl<Config>, public builder_extensions<Config> {
+    private:
+        using config_postprocessor = config::postprocess_config<Config>;
+
+        using post_processed_config = typename config_postprocessor::new_config_type;
+
     public:
-        constexpr explicit bus_builder(Config&& config) : config(std::forward<Config>(config)) {}
+        constexpr explicit bus_template_builder(Config&& config) : config(std::forward<Config>(config)) {}
 
-        inline typename bus_constructor<typename config::postprocess_config<Config>::new_config_type>::bus_type
+        constexpr inline bus_template<post_processed_config>
         build() const {
-            return bus_constructor<typename config::postprocess_config<Config>::new_config_type>::construct(
-                    config::postprocess_config<Config>(std::move(static_cast<Config>(config))).new_config);
-        }
-
-        constexpr inline typename config::postprocess_config<Config>::new_config_type get_processed_config() {
-            return config::postprocess_config<Config>(std::move(static_cast<Config>(config))).new_config;
+            return bus_template<post_processed_config>(
+                    config_postprocessor(std::move(static_cast<Config>(config))).new_config
+            );
         }
 
     private:
@@ -64,10 +66,10 @@ namespace veho {
     };
 
     template <typename Controller>
-    constexpr inline bus_builder<config::builder_config<Controller>>
-    bus_template() noexcept {
-        return bus_builder<config::builder_config<Controller>>(config::builder_config<Controller>(std::make_tuple()));
+    constexpr inline bus_template_builder<config::builder_config<Controller>>
+    make_bus_template() noexcept {
+        return bus_template_builder<config::builder_config<Controller>>(config::builder_config<Controller>(std::make_tuple()));
     }
 }
 
-#endif //VEHO_BUS_BUILDER_HPP
+#endif //VEHO_BUS_TEMPLATE_BUILDER_HPP

@@ -11,7 +11,7 @@
 #include <boost/mp11/list.hpp>
 
 #include <veho/frame.hpp>
-#include <veho/bus_builder.hpp>
+#include <veho/bus_template_builder.hpp>
 #include <veho/bus_constructor.hpp>
 
 #include <veho/controller/controller_traits.hpp>
@@ -50,10 +50,10 @@ namespace veho {
     struct builder_extensions<Config, sam3x::rev_8e> {
         using updated_config_for_timestamping_type = Config;
 
-        constexpr inline bus_builder<updated_config_for_timestamping_type> record_timestamps() {
-            return bus_builder<updated_config_for_timestamping_type>(std::move(
-                    const_cast<bus_builder<updated_config_for_timestamping_type>*>(
-                            static_cast<const bus_builder<updated_config_for_timestamping_type>*>(
+        constexpr inline bus_template_builder<updated_config_for_timestamping_type> record_timestamps() {
+            return bus_template_builder<updated_config_for_timestamping_type>(std::move(
+                    const_cast<bus_template_builder<updated_config_for_timestamping_type>*>(
+                            static_cast<const bus_template_builder<updated_config_for_timestamping_type>*>(
                                     this))->config
             ));
         }
@@ -63,7 +63,8 @@ namespace veho {
     struct bus_constructor<Config, sam3x::rev_8e> {
         using bus_type = sam3x::rev_8e;
 
-        static bus_type construct(Config&& config) {
+        template <typename... Args>
+        static bus_type construct(Config&& config, Args&&... args) {
             std::size_t callback_count = 0, transmitter_count = 0;
 
             if (config.template has_capability<controller::receive_capability>()) {

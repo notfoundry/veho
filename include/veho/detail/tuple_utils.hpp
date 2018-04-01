@@ -7,6 +7,8 @@
 
 #include <tuple>
 
+#include "instantiation_utils.hpp"
+
 namespace veho {
     namespace detail {
 
@@ -17,22 +19,24 @@ namespace veho {
         };
 
         namespace detail {
-            template <int Index, class Search, class First, class... Types>
-            struct get_internal {
-                typedef typename get_internal<Index + 1, Search, Types...>::type type;
-                static constexpr const int index = Index;
+            struct select_next_action {};
+            template <std::size_t Index, class Search, class First, class... Types>
+            struct get_type_index {
+                static_assert(sizeof...(Types) > 0, "Type is not present in tuple");
+                typedef typename get_type_index<Index + 1, Search, Types...>::type type;
+                static constexpr const std::size_t index = Index;
             };
 
-            template <int Index, class Search, class... Types>
-            struct get_internal<Index, Search, Search, Types...> {
-                typedef get_internal type;
-                static constexpr const int index = Index;
+            template <std::size_t Index, class Search, class... Types>
+            struct get_type_index<Index, Search, Search, Types...> {
+                typedef get_type_index type;
+                static constexpr const std::size_t index = Index;
             };
         }
 
         template <class T, class... Types>
         constexpr inline T get_tuple_elem_by_type(const std::tuple<Types...>& tuple) {
-            return std::get<detail::get_internal<0, T, Types...>::type::index>(tuple);
+            return std::get<detail::get_type_index<0, T, Types...>::type::index>(tuple);
         }
     }
 }

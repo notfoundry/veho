@@ -15,7 +15,6 @@
 #include "condense_closest_exact_filters_to_range_pass.hpp"
 #include "condense_closest_range_filters_to_super_range_pass.hpp"
 #include "extend_range_filter_to_encapsulate_closest_exact_filter_pass.hpp"
-#include "irreducible_mask_filter_handling_pass.hpp"
 
 namespace veho {
     namespace facet {
@@ -35,6 +34,9 @@ namespace veho {
                             >;
 
                             using all_viable_passes = boost::mp11::mp_copy_if<QuotedPassList, is_legal_to_instantiate_pass>;
+
+                            static_assert(boost::mp11::mp_size<all_viable_passes>::value > 0,
+                                          "Optimizer error: No further reduction passes can be instantiated to meet constraints");
 
                             using preemptively_ran_pass_list = boost::mp11::mp_transform<instantiate_quoted_pass, all_viable_passes>;
 
@@ -67,9 +69,6 @@ namespace veho {
                             using applied_best_pass = apply_best_reduction_pass<
                                     Controller, TypeMap, Callbacks, QuotedPassList
                             >;
-
-                            static_assert(!std::is_same<TypeMap, typename applied_best_pass::new_type_map_type>::value, "TYPE MAPS ARE SAME");
-                            static_assert(!std::is_same<Callbacks, typename applied_best_pass::new_callbacks_type>::value, "CALLBACKS ARE SAME");
 
                             using next_stage = callback_reducer_impl<
                                     Controller,
@@ -116,8 +115,7 @@ namespace veho {
                         using reduction_pass_list = boost::mp11::mp_list<
                                 boost::mp11::mp_quote<condense_closest_exact_filters_to_range_pass>,
                                 boost::mp11::mp_quote<condense_closest_range_filters_to_super_range_pass>,
-                                boost::mp11::mp_quote<extend_range_filter_to_encapsulate_closest_exact_filter_pass>,
-                                boost::mp11::mp_quote<irreducible_mask_filter_handling_pass>
+                                boost::mp11::mp_quote<extend_range_filter_to_encapsulate_closest_exact_filter_pass>
                         >;
 
                         using impl = detail::callback_reducer_impl<Controller, TypeMap, Callbacks, reduction_pass_list, UsableMailboxCount>;

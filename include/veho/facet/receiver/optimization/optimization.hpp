@@ -11,8 +11,9 @@
 
 #include <boost/mp11/list.hpp>
 
-#include "expansion/expansion.hpp"
+#include "preprocessing/preprocessing.hpp"
 #include "normalization/normalization.hpp"
+#include "expansion/expansion.hpp"
 #include "reduction/reduction.hpp"
 
 namespace veho {
@@ -69,33 +70,34 @@ namespace veho {
 
                 template <typename Controller, typename TypeMap, typename Callbacks, std::size_t UsableMailboxCount>
                 struct callback_optimizer {
-                    using normalizer = normalization::callback_normalizer<Controller, TypeMap, Callbacks>;
+                private:
+                    using preprocessor = preprocessing::callback_preprocessor<Controller, TypeMap, Callbacks>;
+
+                    using preprocessed_type_map = typename preprocessor::new_type_map_type;
+
+                    using preprocessed_callbacks_type = typename preprocessor::new_callbacks_type;
+
+
+                    using normalizer = normalization::callback_normalizer<Controller, preprocessed_type_map, preprocessed_callbacks_type>;
 
                     using normalized_type_map = typename normalizer::new_type_map_type;
 
                     using normalized_callbacks_type = typename normalizer::new_callbacks_type;
 
-                    using optimization_process = typename detail::determine_optimization_process<
+
+                    using optimizer = typename detail::determine_optimization_process<
                             Controller, normalized_type_map, normalized_callbacks_type, UsableMailboxCount
                     >::optimizer;
 
+                public:
                     constexpr explicit callback_optimizer(Callbacks&& callbacks)
-                            : new_callbacks(optimization_process(normalizer(std::forward<Callbacks>(callbacks)).new_callbacks).new_callbacks) {}
+                            : new_callbacks(optimizer(normalizer(std::forward<Callbacks>(callbacks)).new_callbacks).new_callbacks) {}
 
-                    using new_type_map_type = typename optimization_process::new_type_map_type;
+                    using new_type_map_type = typename optimizer::new_type_map_type;
 
-                    using new_callbacks_type = typename optimization_process::new_callbacks_type;
+                    using new_callbacks_type = typename optimizer::new_callbacks_type;
 
                     new_callbacks_type new_callbacks;
-
-//                    constexpr explicit callback_optimizer(Callbacks&& callbacks)
-//                            : new_callbacks(normalizer(std::forward<Callbacks>(callbacks)).new_callbacks) {}
-//
-//                    using new_type_map_type = normalized_type_map;
-//
-//                    using new_callbacks_type = normalized_callbacks_type;
-//
-//                    new_callbacks_type new_callbacks;
                 };
             }
         }

@@ -14,8 +14,8 @@
 #include <veho/controller/controller_traits.hpp>
 #include <veho/controller/capabilities.hpp>
 
-#include <veho/facet/receiver/receiver_facet.hpp>
-#include <veho/facet/transmitter/transmitter_facet.hpp>
+#include <veho/facet/receiver/receiver_facet_config_postprocessor.hpp>
+#include <veho/facet/transmitter/transmitter_facet_config_postprocessor.hpp>
 
 #include "config_postprocessor_fwd.hpp"
 #include "config_traits.hpp"

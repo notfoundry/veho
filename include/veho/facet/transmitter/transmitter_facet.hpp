@@ -8,7 +8,7 @@
 #include <utility>
 #include <type_traits>
 
-#include <veho/bus_builder_fwd.hpp>
+#include <veho/bus_template_builder_fwd.hpp>
 
 #include <veho/config/config_traits.hpp>
 
@@ -67,13 +67,13 @@ namespace veho {
 
         public:
             template <std::size_t NumTransmitters>
-            constexpr veho::bus_builder<typename config_updater<NumTransmitters>::updated_config_type>
+            constexpr veho::bus_template_builder<typename config_updater<NumTransmitters>::updated_config_type>
             with_transmitters() {
                 return (transmitter::detail::ensure_transmitter_count_not_previously_specified<Config>(),
-                        bus_builder<typename config_updater<NumTransmitters>::updated_config_type>(
+                        bus_template_builder<typename config_updater<NumTransmitters>::updated_config_type>(
                                 config_updater<NumTransmitters>(
                                         std::move(
-                                                const_cast<bus_builder<Config>*>(static_cast<const bus_builder<Config>*>(this))->config)
+                                                const_cast<bus_template_builder<Config>*>(static_cast<const bus_template_builder<Config>*>(this))->config)
                                 ).updated_config));
             }
         };

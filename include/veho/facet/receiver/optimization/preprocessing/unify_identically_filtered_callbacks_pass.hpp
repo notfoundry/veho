@@ -9,6 +9,8 @@
 #include <boost/mp11/tuple.hpp>
 #include <boost/mp11/list.hpp>
 
+#include <veho/frame.hpp>
+
 #include <veho/facet/receiver/optimization/pass_traits.hpp>
 
 #include <veho/detail/tuple_utils.hpp>
@@ -17,35 +19,32 @@ namespace veho {
     namespace facet {
         namespace receiver {
             namespace optimization {
-                namespace normalization {
+                namespace preprocessing {
                     namespace detail {
-                        template <typename Callbacks>
+                        template <typename Controller, typename Callbacks>
                         class callback_unifier {
                         private:
-                            template <typename... Ts>
-                            struct invoker {
-                                constexpr explicit invoker(Ts&& ... ts) : ts(
-                                        std::forward_as_tuple(std::forward<Ts>(ts)...)) {}
+                            template <typename Dependencies>
+                            struct invoker_functor {
+                                constexpr explicit invoker_functor(Dependencies&& deps, const veho::frame<Controller>& frame)
+                                        : deps(std::forward<Dependencies>(deps)), frame(frame) {}
 
                                 template <typename F>
-                                constexpr void operator()(const F& f) {
-                                    invoke(f, boost::mp11::make_index_sequence<sizeof...(Ts)>());
+                                constexpr void operator()(F&& f) {
+                                    f(std::forward<Dependencies>(deps), frame);
                                 }
 
-                                template <typename F, std::size_t... Is>
-                                constexpr void invoke(const F& f, boost::mp11::index_sequence<Is...>) {
-                                    f(std::forward<std::tuple_element<Is, decltype(ts)>>(std::get<Is>(ts))...);
-                                };
+                                Dependencies deps;
 
-                                std::tuple<Ts...> ts;
+                                const veho::frame<Controller>& frame;
                             };
 
                         public:
                             constexpr explicit callback_unifier(Callbacks&& callbacks) : callbacks(callbacks) {}
 
-                            template <typename... Ts>
-                            constexpr void operator()(const Ts& ... ts) {
-                                boost::mp11::tuple_for_each(callbacks, invoker<Ts...>{std::forward<Ts>(ts)...});
+                            template <typename Dependencies>
+                            inline void operator()(Dependencies&& deps, const veho::frame<Controller>& frame) {
+                                boost::mp11::tuple_for_each(callbacks, invoker_functor<Dependencies>(std::forward<Dependencies>(deps), frame));
                             }
 
                         private:
@@ -94,9 +93,9 @@ namespace veho {
                             return condenser<TypeList, Tuple>{std::forward<Tuple>(tuple), std::make_tuple()}.value;
                         };
 
-                        template <typename CallbackTuple, bool Unify>
+                        template <typename Controller, typename CallbackTuple, bool Unify>
                         struct make_appropriate_callback_impl {
-                            using callback_t = callback_unifier<CallbackTuple>;
+                            using callback_t = callback_unifier<Controller, CallbackTuple>;
 
                             constexpr explicit make_appropriate_callback_impl(CallbackTuple&& callbacks) : value(
                                     callback_t(std::forward<CallbackTuple>(callbacks))) {}
@@ -104,8 +103,8 @@ namespace veho {
                             callback_t value;
                         };
 
-                        template <typename CallbackTuple>
-                        struct make_appropriate_callback_impl<CallbackTuple, false> {
+                        template <typename Controller, typename CallbackTuple>
+                        struct make_appropriate_callback_impl<Controller, CallbackTuple, false> {
                             using callback_t = boost::mp11::mp_front<CallbackTuple>;
 
                             constexpr explicit make_appropriate_callback_impl(CallbackTuple&& callbacks) : value(
@@ -114,24 +113,23 @@ namespace veho {
                             callback_t value;
                         };
 
-                        template <typename CallbackTuple, bool Unify = (boost::mp11::mp_size<CallbackTuple>::value > 1)>
-                        constexpr typename make_appropriate_callback_impl<CallbackTuple, Unify>::callback_t
+                        template <typename Controller, typename CallbackTuple, bool Unify = (boost::mp11::mp_size<CallbackTuple>::value > 1)>
+                        constexpr typename make_appropriate_callback_impl<Controller, CallbackTuple, Unify>::callback_t
                         make_appropriate_callback(CallbackTuple&& tuple) {
-                            return make_appropriate_callback_impl<CallbackTuple, Unify>(
+                            return make_appropriate_callback_impl<Controller, CallbackTuple, Unify>(
                                     std::forward<CallbackTuple>(tuple)).value;
                         };
 
 
-                        template <typename TypeMap, typename Callbacks, typename CallbackAccumulator = std::tuple<>, typename TypeMapAccumulator = boost::mp11::mp_list<>, typename Enable = void>
+                        template <typename Controller, typename TypeMap, typename Callbacks, typename CallbackAccumulator = std::tuple<>, typename TypeMapAccumulator = boost::mp11::mp_list<>, typename Enable = void>
                         struct callback_with_same_key_in_map_unifier;
 
-                        template <typename TypeMap, typename Callbacks, typename CallbackAccumulator, typename TypeMapAccumulator>
-                        struct callback_with_same_key_in_map_unifier<TypeMap, Callbacks, CallbackAccumulator, TypeMapAccumulator, typename std::enable_if<(
+                        template <typename Controller, typename TypeMap, typename Callbacks, typename CallbackAccumulator, typename TypeMapAccumulator>
+                        struct callback_with_same_key_in_map_unifier<Controller, TypeMap, Callbacks, CallbackAccumulator, TypeMapAccumulator, typename std::enable_if<(
                                 boost::mp11::mp_size<TypeMap>::value == 0)>::type> {
                             constexpr callback_with_same_key_in_map_unifier(Callbacks&&,
                                                                             CallbackAccumulator&& accumulator)
-                                    : value(
-                                    accumulator) {}
+                                    : value(accumulator) {}
 
                             using unified_t = CallbackAccumulator;
 
@@ -140,8 +138,8 @@ namespace veho {
                             unified_t value;
                         };
 
-                        template <typename TypeMap, typename Callbacks, typename CallbackAccumulator, typename TypeMapAccumulator>
-                        struct callback_with_same_key_in_map_unifier<TypeMap, Callbacks, CallbackAccumulator, TypeMapAccumulator, typename std::enable_if<(
+                        template <typename Controller, typename TypeMap, typename Callbacks, typename CallbackAccumulator, typename TypeMapAccumulator>
+                        struct callback_with_same_key_in_map_unifier<Controller, TypeMap, Callbacks, CallbackAccumulator, TypeMapAccumulator, typename std::enable_if<(
                                 boost::mp11::mp_size<TypeMap>::value > 0)>::type> {
                             using curr_map_entry = boost::mp11::mp_front<TypeMap>;
 
@@ -149,16 +147,18 @@ namespace veho {
 
                             using curr_callback_types_as_tuple = boost::mp11::mp_rename<curr_callback_types, std::tuple>;
 
-                            using new_callback = decltype(make_appropriate_callback(
-                                    std::declval<curr_callback_types_as_tuple>()));
+                            using new_callback = decltype(
+                                    make_appropriate_callback<Controller>(std::declval<curr_callback_types_as_tuple>())
+                            );
 
                             using updated_accumulator =  boost::mp11::mp_push_back<CallbackAccumulator, new_callback>;
 
                             using updated_type_map = boost::mp11::mp_push_back<
                                     TypeMapAccumulator,
-                                    boost::mp11::mp_list<boost::mp11::mp_front<curr_map_entry>, new_callback>>;
+                                    boost::mp11::mp_list<boost::mp11::mp_front<curr_map_entry>, new_callback>
+                            >;
 
-                            using next_concat_stage = callback_with_same_key_in_map_unifier<boost::mp11::mp_pop_front<TypeMap>, Callbacks, updated_accumulator, updated_type_map>;
+                            using next_concat_stage = callback_with_same_key_in_map_unifier<Controller, boost::mp11::mp_pop_front<TypeMap>, Callbacks, updated_accumulator, updated_type_map>;
 
                             using new_type_map_t = typename next_concat_stage::new_type_map_t;
 
@@ -166,13 +166,21 @@ namespace veho {
 
                             constexpr callback_with_same_key_in_map_unifier(Callbacks&& callbacks,
                                                                             CallbackAccumulator&& accumulator)
-                                    : value(next_concat_stage(std::forward<Callbacks>(callbacks),
-                                                              std::forward<updated_accumulator>(
-                                                                      veho::detail::tuple_push_back(accumulator,
-                                                                                                    make_appropriate_callback(
-                                                                                                            condense<curr_callback_types, Callbacks>(
-                                                                                                                    std::forward<Callbacks>(
-                                                                                                                            callbacks)))))).value) {}
+                                    : value(
+                                            next_concat_stage(
+                                                    std::forward<Callbacks>(callbacks),
+                                                    std::forward<updated_accumulator>(
+                                                            veho::detail::tuple_push_back(
+                                                                    accumulator,
+                                                                    make_appropriate_callback<Controller>(
+                                                                            condense<curr_callback_types, Callbacks>(
+                                                                                    std::forward<Callbacks>(callbacks)
+                                                                            )
+                                                                    )
+                                                            )
+                                                    )
+                                            ).value
+                                    ) {}
 
                             unified_t value;
                         };
@@ -181,13 +189,13 @@ namespace veho {
                     template <typename Controller, typename TypeMap, typename Callbacks>
                     class unify_identically_filtered_callbacks_pass {
                     private:
-                        using unifier = detail::callback_with_same_key_in_map_unifier<TypeMap, Callbacks>;
+                        using unifier = detail::callback_with_same_key_in_map_unifier<Controller, TypeMap, Callbacks>;
 
                     public:
                         constexpr explicit unify_identically_filtered_callbacks_pass(Callbacks&& callbacks)
                                 : new_callbacks(unifier(std::forward<Callbacks>(callbacks), std::make_tuple()).value) {}
 
-                        using pass_category = veho::facet::receiver::optimization::normalization_pass_tag;
+                        using pass_category = veho::facet::receiver::optimization::preprocessing_pass_tag;
 
                         using updated_type_map_type = typename unifier::new_type_map_t;
 
