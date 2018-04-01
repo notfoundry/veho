@@ -17,24 +17,41 @@
 #include <veho/bus_builder.hpp>
 #include <veho/frame_matchers.hpp>
 
+#include "sam3x.hpp"
 #include "fancy_code.hpp"
 
 int main() {
   namespace fm = veho::frame_matchers;
+
+  constexpr auto bus_template = veho::make_bus_template<sam3x::rev_8e>()
+          .with_transmitters<2>()
+          .record_timestamps()
+          .on(fm::exact<engine_status_id>(),
+                  [](const fancy_code& fc, const veho::frame<sam3x::rev_8e>& f){ 
+              fc.update_engine(f);
+          })
+          .on(fm::range<min_flow_id, max_flow_id>(),
+                  [](const even_fancier& ef, const veho::frame<sam3x::rev_8e>& f){
+              ef.process_flow(f);
+          })
+          .on(fm::mask<base_id, mask_for_data_spread>(),
+                  [](const fancy_code& fc, const even_fancier& ef, const veho::frame<sam3x::rev_8e>& f){
+              fc.handle_spread(ef.preprocess_spread(f));
+          })
+          .build();
+          
+  auto bus = bus_template.instantiate(get_fanciness(), get_even_fancier_fanciness());
   
-  auto your_fancy_code = make_it_happen();
-  
-  auto bus = veho::bus_template<sam3x::rev_8e>()
-              .with_transmitters<2>()
-              .record_timestamps()
-              .on(fm::exact<engine_status_id>(), [&](const veho::frame<sam3x::rev_8e>& f){ your_fancy_code.update_engine(f); })
-              .on(fm::range<min_flow_id, max_flow_id>(), [&](const veho::frame<sam3x::rev_8e>& f){ your_fancy_code.process_flow(f); })
-              .on(fm::mask<base_id, mask_for_spread>(), [&](const veho::frame<sam3x::rev_8e>& f){ your_fancy_code.handle_spread(f); })
-              .on_remote(fm::exact<remote_request_id>(), [&](const veho::frame<sam3x::rev_8e>& f) { return your_fancy_code.reply(f); })
-              .build();
+  bus.set_timing(sam3x::timing_builder()
+      .clock_freq_hz(48000000)
+      .baudrate(500000)
+      .tx_rx_delay_ns(200)
+      .sample_point(0.8f));
+      
+  bus.activate(get_pin_number());
   
   auto your_timer = cool_timer_event_maker(8_seconds, [&]{
-    bus.transmit(your_fancy_code.generate_keep_alive());
+    bus.transmit(generate_keep_alive());
   });
 }
 ```
