@@ -51,7 +51,7 @@ int main() {
   bus.activate(get_pin_number());
   
   auto your_timer = cool_timer_event_maker(8_seconds, [&]{
-    bus.transmit(your_fancy_code.generate_keep_alive());
+    bus.transmit(generate_keep_alive());
   });
 }
 ```
