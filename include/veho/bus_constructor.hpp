@@ -8,18 +8,25 @@
 #include <type_traits>
 
 #include "detail/instantiation_utils.hpp"
+
 #include "controller/capabilities.hpp"
+
 #include "config/config_traits.hpp"
 
+#include "bus_template_fwd.hpp"
+
 namespace veho {
-    template <typename Config, typename Controller = typename veho::config::config_traits<Config>::controller_type>
+    template <typename CompiletimeConfig, typename RuntimeConfig, typename Capability>
+    struct bus_construction_requirement {};
+
+    template <typename CompiletimeConfig, typename RuntimeConfig, typename Controller>
     struct bus_constructor {
-        static_assert(veho::detail::false_if_instantiated<Config>::value, "Bus constructor has not been defined for controller type");
+        static_assert(veho::detail::false_if_instantiated<CompiletimeConfig>::value, "Bus constructor has not been defined for controller type");
 
         using bus_type = void;
 
         template <typename... Args>
-        static bus_type construct(Config&&, Args&&...) {}
+        static bus_type construct(CompiletimeConfig&&, RuntimeConfig&&, Args&&...) {}
     };
 }
 

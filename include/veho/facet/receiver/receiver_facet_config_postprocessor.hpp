@@ -13,7 +13,7 @@
 #include <veho/config/config_traits.hpp>
 #include <veho/config/config_postprocessor_fwd.hpp>
 
-#include "receiver_facet_capability_data.hpp"
+#include "receiver_facet_compiletime_capability_data.hpp"
 #include "optimization/optimization.hpp"
 
 namespace veho {
@@ -45,8 +45,10 @@ namespace veho {
             struct receiver_facet_callback_optimization_config_processor {
                 using controller = typename veho::config::config_traits<Config>::controller_type;
 
-                using old_receiver_capability_data = typename veho::config::config_traits<Config>::template capability_data_type<
-                        veho::controller::receive_capability>;
+                using old_receiver_capability_data = typename veho::config::config_traits<Config>
+                        ::template capability_data_type<veho::controller::receive_capability>;
+
+                using dependency_set = typename old_receiver_capability_data::dependency_set_type;
 
                 using optimizer = veho::facet::receiver::optimization::callback_optimizer<
                         controller,
@@ -61,7 +63,7 @@ namespace veho {
 
                 constexpr explicit receiver_facet_callback_optimization_config_processor(Config&& config)
                         : new_config(config.template replace_capability_data<veho::controller::receive_capability>(
-                                receiver_capability_data<controller, new_type_map_type, new_callbacks_type>(
+                                receiver_compiletime_capability_data<controller, new_type_map_type, new_callbacks_type, dependency_set>(
                                         optimizer(std::move(
                                                 config.template capability_data_for<veho::controller::receive_capability>().callbacks
                                         )).new_callbacks
@@ -71,7 +73,7 @@ namespace veho {
 
                 using new_config_type = decltype(
                         std::declval<Config>().template replace_capability_data<veho::controller::receive_capability>(
-                                std::declval<receiver_capability_data<controller, new_type_map_type, new_callbacks_type>>()
+                                std::declval<receiver_compiletime_capability_data<controller, new_type_map_type, new_callbacks_type, dependency_set>>()
                         )
                 );
 

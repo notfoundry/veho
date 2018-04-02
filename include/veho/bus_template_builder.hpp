@@ -17,6 +17,8 @@
 #include "bus_template_builder_fwd.hpp"
 #include "bus_template.hpp"
 
+#include "controller/capabilities.hpp"
+
 namespace veho {
     template <
             typename Config,
@@ -45,13 +47,16 @@ namespace veho {
 
         using post_processed_config = typename config_postprocessor::new_config_type;
 
+        using controller = typename config::config_traits<Config>::controller_type;
+
     public:
         constexpr explicit bus_template_builder(Config&& config) : config(std::forward<Config>(config)) {}
 
         constexpr inline bus_template<post_processed_config>
         build() const {
             return bus_template<post_processed_config>(
-                    config_postprocessor(std::move(static_cast<Config>(config))).new_config
+                    config_postprocessor(std::move(static_cast<Config>(config))).new_config,
+                    config::builder_config<controller>(std::make_tuple())
             );
         }
 

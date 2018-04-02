@@ -2,6 +2,8 @@
 * Created by Mark Johnson on 1/20/2018.
 */
 
+#include <cstdio>
+
 #include <veho/bus_template_builder.hpp>
 #include <veho/frame_matchers.hpp>
 
@@ -37,7 +39,9 @@ int main() {
             })
             .build();
 
-    auto bus = bus_template.instantiate(custom_thing_1(), custom_thing_2(), custom_thing_3());
+    auto bus = bus_template
+            .with(custom_thing_1(), custom_thing_2(), custom_thing_3())
+            .instantiate();
 
-    return bus.callback_count;
+    std::printf("%u", bus.transmitter_count);
 }

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(veho VERSION 0.1.2 LANGUAGES CXX)
+project(veho VERSION 0.1.3 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -13,9 +13,10 @@ endif()
 add_library(veho INTERFACE)
 
 set(veho_core_headers
-        include/veho/bus_construction_requirement.hpp
         include/veho/bus_constructor.hpp
+        include/veho/bus_constructor_fwd.hpp
         include/veho/bus_template.hpp
+        include/veho/bus_template_fwd.hpp
         include/veho/bus_template_builder.hpp
         include/veho/bus_template_builder_fwd.hpp
         include/veho/frame.hpp
@@ -47,7 +48,8 @@ set(veho_receiver_facet_headers
         include/veho/facet/receiver/optimization/normalization/normalization.hpp
         include/veho/facet/receiver/optimization/expansion/expansion.hpp
         include/veho/facet/receiver/receiver_facet_config_postprocessor.hpp
-        include/veho/facet/receiver/receiver_facet_capability_data.hpp
+        include/veho/facet/receiver/receiver_facet_compiletime_capability_data.hpp
+        include/veho/facet/receiver/receiver_facet_runtime_capability_data.hpp
         include/veho/facet/receiver/optimization/normalization/append_overlapping_range_filter_segment_callbacks_pass.hpp
         include/veho/facet/receiver/optimization/normalization/normalized_callback_traits.hpp
         include/veho/facet/receiver/detail/function_traits.hpp
@@ -65,6 +67,7 @@ set(veho_facet_headers
         ${veho_receiver_facet_headers}
         ${veho_transmitter_facet_headers}
         include/veho/facet/builder_facet.hpp
+        include/veho/facet/template_facet.hpp
         include/veho/facet/facet_traits.hpp
 )
 

@@ -13,25 +13,43 @@
 #include <boost/mp11/integral.hpp>
 
 #include <veho/frame.hpp>
-
 #include <veho/bus_template_builder_fwd.hpp>
+#include <veho/bus_template.hpp>
+
 #include <veho/facet/builder_facet.hpp>
+#include <veho/facet/template_facet.hpp>
 
 #include <veho/config/config_traits.hpp>
 #include <veho/controller/controller_traits.hpp>
 
 #include <veho/controller/capabilities.hpp>
+
 #include <veho/detail/instantiation_utils.hpp>
 #include <veho/detail/tuple_utils.hpp>
 
-#include "receiver_facet_capability_data.hpp"
+#include "receiver_facet_compiletime_capability_data.hpp"
+#include "receiver_facet_runtime_capability_data.hpp"
 #include "receiver_facet_config_postprocessor.hpp"
-#include "receiver_facet_construction_requirement.hpp"
 
 namespace veho {
     namespace facet {
         namespace receiver {
             namespace detail {
+                template <typename RuntimeConfig, typename... Dependencies>
+                struct update_runtime_config_after_adding_dependencies {
+                    constexpr explicit update_runtime_config_after_adding_dependencies(RuntimeConfig&& runtime_config, Dependencies&&... dependencies)
+                            : updated_config(veho::facet::receiver::receiver_runtime_capability_data<std::tuple<Dependencies...>>(
+                                    std::make_tuple(std::forward<Dependencies>(dependencies)...))) {}
+
+                    using updated_config_type = decltype(
+                            std::declval<RuntimeConfig>().template add_capability_data<veho::controller::receive_capability>(
+                                    std::declval<veho::facet::receiver::receiver_runtime_capability_data<std::tuple<Dependencies...>>>()
+                            )
+                    );
+
+                    updated_config_type updated_config;
+                };
+
                 template <typename Config, typename Matcher, typename Callback,
                         bool FacetAlreadyPresent = veho::config::config_traits<Config>::template has_capability<veho::controller::receive_capability>::value>
                 struct update_config_after_adding_listener {
@@ -62,14 +80,14 @@ namespace veho {
                     using controller = typename config::config_traits<Config>::controller_type;
 
                     using updated_capability_data = decltype(
-                        make_receiver_capability_data<controller>().push_back(std::declval<Matcher>(), std::declval<Callback>())
+                    make_receiver_compiletime_capability_data<controller>().push_back(std::declval<Matcher>(), std::declval<Callback>())
                     );
 
                 public:
                     constexpr update_config_after_adding_listener(Config&& config, Matcher&& matcher,
                                                                   Callback&& callback)
                             : updated_config(config.template add_capability_data<veho::controller::receive_capability>(
-                            make_receiver_capability_data<controller>().push_back(std::forward<Matcher>(matcher),
+                            make_receiver_compiletime_capability_data<controller>().push_back(std::forward<Matcher>(matcher),
                                                                       std::forward<Callback>(callback)))) {
                     }
 
@@ -126,6 +144,37 @@ namespace veho {
                                         std::forward<Callback>(callback)
                                 ).updated_config
                         ));
+            }
+        };
+
+        template <typename CompiletimeConfig, typename RuntimeConfig>
+        struct template_facet<CompiletimeConfig, RuntimeConfig, veho::controller::receive_capability> {
+        private:
+            template <typename... Dependencies>
+            using runtime_config_updater = receiver::detail::update_runtime_config_after_adding_dependencies<RuntimeConfig, Dependencies...>;
+
+            template <typename... Dependencies>
+            using updated_runtime_config = typename runtime_config_updater<Dependencies...>::updated_config_type;
+
+        public:
+            template <typename... Dependencies>
+            inline veho::bus_template<
+                    CompiletimeConfig,
+                    updated_runtime_config<Dependencies...>
+            > with(Dependencies&&... dependencies) const {
+                return veho::bus_template<CompiletimeConfig, updated_runtime_config<Dependencies...>>(
+                        std::move(
+                                const_cast<veho::bus_template<CompiletimeConfig, RuntimeConfig>*>(
+                                        static_cast<const veho::bus_template<CompiletimeConfig, RuntimeConfig>*>(this))->compiletime_config
+                        ),
+                        runtime_config_updater<Dependencies...>(
+                                std::move(
+                                        const_cast<veho::bus_template<CompiletimeConfig, RuntimeConfig>*>(
+                                                static_cast<const veho::bus_template<CompiletimeConfig, RuntimeConfig>*>(this))->runtime_config
+                                ),
+                                std::forward<Dependencies>(dependencies)...
+                        ).updated_config
+                );
             }
         };
     }

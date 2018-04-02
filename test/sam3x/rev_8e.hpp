@@ -59,22 +59,23 @@ namespace veho {
         }
     };
 
-    template <typename Config>
-    struct bus_constructor<Config, sam3x::rev_8e> {
+    template <typename CompiletimeConfig, typename RuntimeConfig>
+    struct bus_constructor<CompiletimeConfig, RuntimeConfig, sam3x::rev_8e> {
         using bus_type = sam3x::rev_8e;
 
-        template <typename... Args>
-        static bus_type construct(Config&& config, Args&&... args) {
+        static bus_type construct(CompiletimeConfig&& compiletime_config, RuntimeConfig&& runtime_config) {
             std::size_t callback_count = 0, transmitter_count = 0;
 
-            if (config.template has_capability<controller::receive_capability>()) {
-                auto receiver_data = config.template capability_data_for<controller::receive_capability>();
+            if (compiletime_config.template has_capability<controller::receive_capability>()) {
+                auto receiver_data = compiletime_config.template capability_data_for<controller::receive_capability>();
                 auto callbacks = receiver_data.callbacks;
                 callback_count = boost::mp11::mp_size<decltype(callbacks)>::value;
+
+                auto deps = runtime_config.template capability_data_for<controller::receive_capability>().dependency_set;
             }
 
-            if (config.template has_capability<controller::transmit_capability>()) {
-                auto transmitter_data = config.template capability_data_for<controller::transmit_capability>();
+            if (compiletime_config.template has_capability<controller::transmit_capability>()) {
+                auto transmitter_data = compiletime_config.template capability_data_for<controller::transmit_capability>();
                 transmitter_count = transmitter_data.num_transmitters;
             }
 

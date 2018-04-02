@@ -2,8 +2,8 @@
 * Created by Mark Johnson on 3/24/2018.
 */
 
-#ifndef VEHO_RECEIVER_FACET_CAPABILITY_DATA_HPP
-#define VEHO_RECEIVER_FACET_CAPABILITY_DATA_HPP
+#ifndef VEHO_RECEIVER_FACET_COMPILETIME_CAPABILITY_DATA_HPP
+#define VEHO_RECEIVER_FACET_COMPILETIME_CAPABILITY_DATA_HPP
 
 #include <utility>
 #include <tuple>
@@ -92,7 +92,7 @@ namespace veho {
                     typename Callbacks = std::tuple<>,
                     typename DependencySet = std::tuple<>
             >
-            struct receiver_capability_data {
+            struct receiver_compiletime_capability_data {
             private:
                 template <typename Matcher>
                 using compute_map_entry_if_absent = boost::mp11::mp_eval_if_c<
@@ -114,7 +114,7 @@ namespace veho {
                 using update_dependencies_with_those_in = typename detail::update_dependency_set_with_callback_dependencies<DependencySet, Callback>::type;
 
                 template <typename Matcher, typename Callback, typename NewCapabilityData>
-                using pushed_back_type = receiver_capability_data<
+                using pushed_back_type = receiver_compiletime_capability_data<
                         Controller,
                         appended_or_inserted_into_map_type<Matcher, Callback>,
                         boost::mp11::mp_push_back<Callbacks, Callback>,
@@ -127,7 +127,7 @@ namespace veho {
                 >;
 
             public:
-                constexpr explicit receiver_capability_data(Callbacks&& callbacks) : callbacks(
+                constexpr explicit receiver_compiletime_capability_data(Callbacks&& callbacks) : callbacks(
                         std::forward<Callbacks>(callbacks)) {}
 
                 template <typename Matcher, typename Callback>
@@ -153,10 +153,10 @@ namespace veho {
             };
 
             template <typename Controller>
-            constexpr inline receiver_capability_data<Controller> make_receiver_capability_data() {
-                return receiver_capability_data<Controller>(std::make_tuple());
+            constexpr inline receiver_compiletime_capability_data<Controller> make_receiver_compiletime_capability_data() {
+                return receiver_compiletime_capability_data<Controller>(std::make_tuple());
             }
         }
     }
 }
-#endif //VEHO_RECEIVER_FACET_CAPABILITY_DATA_HPP
+#endif //VEHO_RECEIVER_FACET_COMPILETIME_CAPABILITY_DATA_HPP
