@@ -40,7 +40,9 @@ int main() {
           })
           .build();
           
-  auto bus = bus_template.instantiate(get_fanciness(), get_even_fancier_fanciness());
+  auto bus = bus_template
+      .with(get_fanciness(), get_even_fancier_fanciness())
+      .instantiate(get_default_pin_number());
   
   bus.set_timing(sam3x::timing_builder()
       .clock_freq_hz(48000000)
@@ -48,7 +50,7 @@ int main() {
       .tx_rx_delay_ns(200)
       .sample_point(0.8f));
       
-  bus.activate(get_pin_number());
+  bus.activate();
   
   auto your_timer = cool_timer_event_maker(8_seconds, [&]{
     bus.transmit(generate_keep_alive());
