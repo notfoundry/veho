@@ -10,7 +10,7 @@
 
 <div align="center">
   
-  [Check out the wiki for design notes!](https://github.com/foundry27/veho/wiki/Design-Details)
+  [Check out the wiki for design notes!](https://github.com/foundry27/veho/wiki)
 </div>
 
 ## Table of Contents
