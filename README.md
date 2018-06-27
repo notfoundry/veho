@@ -1,7 +1,7 @@
 <h1 align="center">Veho</h1>
 
 <div align="center">
-  <strong>A C++11 embedded automotive development platform for the 21st Century</strong>
+  <strong>A C++11 embedded CAN development platform for the 21st Century 🚗</strong>
 </div>
 <div align="center">
   Hand-written performance, compiler-enforced safety, fluent modern syntax
