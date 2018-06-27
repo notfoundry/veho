@@ -5,11 +5,13 @@
 </div>
 <div align="center">
   Hand-written performance, compiler-enforced safety, fluent modern syntax
+</div>
+<br />
+
+<div align="center">
   
   [Check out the wiki for design notes!](https://github.com/foundry27/veho/wiki/Design-Details)
 </div>
-
-<br />
 
 ## Table of Contents
 - [What is it?](#what-is-it?)
