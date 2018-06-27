@@ -131,9 +131,9 @@ namespace veho {
             using config_updater = receiver::detail::update_config_after_adding_listener<Config, Matcher, Callback>;
 
         public:
-            template <typename Matcher, typename Callback>
+            template <typename Matcher, typename Callback, typename... ListenerPolicies>
             constexpr veho::bus_template_builder<typename config_updater<Matcher, Callback>::updated_config_type>
-            on(Matcher&& matcher, Callback&& callback) {
+            on(Matcher&& matcher, Callback&& callback, ListenerPolicies... listener_policies) {
                 return (receiver::detail::ensure_transmitters_do_not_occupy_all_available_mailboxes<Config>(),
                         veho::bus_template_builder<typename config_updater<Matcher, Callback>::updated_config_type>(
                                 config_updater<Matcher, Callback>(

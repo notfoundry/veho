@@ -11,6 +11,7 @@
 #include <boost/mp11/list.hpp>
 
 #include <veho/frame.hpp>
+#include <veho/listener_policies.hpp>
 #include <veho/bus_template_builder.hpp>
 #include <veho/bus_constructor.hpp>
 
@@ -33,6 +34,11 @@ namespace veho {
             using capabilities = boost::mp11::mp_list<
                     veho::controller::transmit_capability,
                     veho::controller::receive_capability
+            >;
+
+            using execution_policies = boost::mp11::mp_list<
+                    veho::listener_policies::launch::enqueue,
+                    veho::listener_policies::launch::realtime
             >;
         };
     }

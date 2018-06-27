@@ -21,6 +21,7 @@ set(veho_core_headers
         include/veho/bus_template_builder_fwd.hpp
         include/veho/frame.hpp
         include/veho/frame_matchers.hpp
+        include/veho/listener_policies.hpp
  )
 
 set(veho_detail_headers
@@ -89,12 +90,7 @@ set(header_files
 )
 
 target_sources(veho INTERFACE $<BUILD_INTERFACE:${header_files}>)
-
-target_include_directories(veho
-    INTERFACE
-        $<INSTALL_INTERFACE:include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-)
+target_include_directories(veho INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 add_subdirectory(third_party EXCLUDE_FROM_ALL)
 
 target_compile_features(veho INTERFACE cxx_auto_type)
